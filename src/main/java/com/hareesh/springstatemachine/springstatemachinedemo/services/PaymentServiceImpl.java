@@ -13,6 +13,8 @@ import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.math.BigDecimal;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -30,6 +32,23 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setState(PaymentState.NEW);
         return repository.save(payment);
     }
+
+    @Override
+    public Payment getPaymentById(Long paymentId) {
+        return repository.getPaymentById(paymentId);
+    }
+
+    public Payment createNewPayment(BigDecimal amount) {
+        Payment payment = new Payment();
+        payment.setAmount(amount);
+        return newPayment(payment);
+    }
+
+    @Override
+    public List<Payment> getAllPayments() {
+        return repository.getPayments();
+    }
+
 
     @Transactional
     @Override
