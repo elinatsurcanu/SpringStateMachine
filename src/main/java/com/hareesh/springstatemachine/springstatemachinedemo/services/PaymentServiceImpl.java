@@ -1,5 +1,6 @@
 package com.hareesh.springstatemachine.springstatemachinedemo.services;
 
+import com.hareesh.springstatemachine.springstatemachinedemo.domain.Account;
 import com.hareesh.springstatemachine.springstatemachinedemo.domain.Payment;
 import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentEvent;
 import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentState;
@@ -8,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
-import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
 
@@ -18,30 +18,50 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Service
-
 public class PaymentServiceImpl implements PaymentService {
 
     public static final String PAYMENT_ID_HEADER = "payment_id";
+
     private final PaymentRepository repository;
-    private final StateMachineFactory<PaymentState, PaymentEvent> stateMachineFactory;
+
+    private final StateMachine<PaymentState, PaymentEvent> stateMachine;
+
     private final PaymentStateChangeInterceptor paymentStateChangeInterceptor;
-
-
-    @Override
-    public Payment newPayment(Payment payment) {
-        payment.setState(PaymentState.NEW);
-        return repository.save(payment);
-    }
 
     @Override
     public Payment getPaymentById(Long paymentId) {
         return repository.getPaymentById(paymentId);
     }
 
+    @Override
     public Payment createNewPayment(BigDecimal amount) {
         Payment payment = new Payment();
         payment.setAmount(amount);
-        return newPayment(payment);
+        payment.setState(PaymentState.INITIAL);
+        Payment createdPayment = repository.save(payment);
+
+        StateMachine<PaymentState, PaymentEvent> sm = build(payment.getId());
+        preAuth(createdPayment.getId(), amount, sm);
+
+        payment.setState(sm.getState().getId());
+        return repository.save(payment);
+    }
+
+    @Override
+    public Payment processPayment(Long paymentId) {
+        Payment payment = repository.getPaymentById(paymentId);
+        if (payment.getAmount().compareTo(Account.accountBalance) < 0) {
+            Account.accountBalance = Account.accountBalance.subtract(payment.getAmount());
+            StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
+            sendEvent(paymentId, sm, PaymentEvent.SUBTRACT_MONEY);
+            payment.setState(sm.getState().getId());
+        } else {
+            StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
+            sendEvent(paymentId, sm, PaymentEvent.DECLINE_PAYMENT);
+            payment.setState(sm.getState().getId());
+            throw new RuntimeException("Not enough balance");
+        }
+        return repository.save(payment);
     }
 
     @Override
@@ -50,29 +70,32 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
 
-    @Transactional
     @Override
-    public StateMachine<PaymentState, PaymentEvent> preAuth(Long paymentId) {
-        StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
-        sendEvent(paymentId, sm, PaymentEvent.PRE_AUTH_APPROVED);
-
-        return sm;
+    public void preAuth(Long paymentId, BigDecimal amount, StateMachine<PaymentState, PaymentEvent> sm) {
+        sm.getExtendedState().getVariables().put("amount", amount);
+        sm.getExtendedState().getVariables().put("paymentId", paymentId);
+        sendEvent(paymentId, sm, PaymentEvent.CREATE_PAYMENT);
     }
 
-    @Transactional
     @Override
     public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
-        StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
-        sendEvent(paymentId, sm, PaymentEvent.AUTH_APPROVED);
-
-        return sm;
+        return null;
     }
+
+//    @Transactional
+//    @Override
+//    public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
+//        StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
+//        sendEvent(paymentId, sm, PaymentEvent.AUTH_APPROVED);
+//
+//        return sm;
+//    }
 
     @Transactional
     @Override
     public StateMachine<PaymentState, PaymentEvent> declineAuth(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
-        sendEvent(paymentId, sm, PaymentEvent.AUTH_DECLINED);
+        sendEvent(paymentId, sm, PaymentEvent.DECLINE_PAYMENT);
 
         return sm;
     }
@@ -88,18 +111,16 @@ public class PaymentServiceImpl implements PaymentService {
     private StateMachine<PaymentState, PaymentEvent> build(Long paymentId){
         Payment payment = repository.getOne(paymentId);
 
-        StateMachine<PaymentState, PaymentEvent> sm = stateMachineFactory.getStateMachine(Long.toString(payment.getId()));
+        stateMachine.stop();
 
-        sm.stop();
-
-        sm.getStateMachineAccessor()
+        stateMachine.getStateMachineAccessor()
                 .doWithAllRegions(sma -> {
                     sma.addStateMachineInterceptor(paymentStateChangeInterceptor);
                     sma.resetStateMachine(new DefaultStateMachineContext<>(payment.getState(), null, null, null));
                 });
 
-        sm.start();
+        stateMachine.start();
 
-        return sm;
+        return stateMachine;
     }
 }

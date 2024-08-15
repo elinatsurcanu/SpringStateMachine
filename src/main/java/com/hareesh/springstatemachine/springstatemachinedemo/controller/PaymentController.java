@@ -16,8 +16,8 @@ public class PaymentController {
 
     private final PaymentServiceImpl paymentService;
 
-    @GetMapping(value = "/payment", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Payment> getPaymentById(@RequestParam(value = "paymentId") Long paymentId)  {
+    @GetMapping(value = "/payment/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Payment> getPaymentById(@PathVariable(value = "id") Long paymentId)  {
         return ResponseEntity.ok()
                 .body(paymentService.getPaymentById(paymentId));
     }
@@ -32,6 +32,16 @@ public class PaymentController {
     public ResponseEntity<Payment> createNewPayment(@RequestBody Payment payment) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(paymentService.createNewPayment(payment.getAmount()));
+    }
+
+    @PostMapping(value = "/process/payment/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Payment> processPayment(@PathVariable(value = "id") Long paymentId) {
+        try {
+            paymentService.processPayment(paymentId);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(null);
     }
 
 

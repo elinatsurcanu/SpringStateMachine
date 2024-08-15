@@ -23,12 +23,12 @@ class StateMachineConfigTest {
         StateMachine<PaymentState, PaymentEvent> sm = factory.getStateMachine(UUID.randomUUID());
 
         sm.start();
-        System.out.println(sm.getState().toString());
-        sm.sendEvent(PaymentEvent.PRE_AUTHORIZE);
-        System.out.println(sm.getState().toString());
-        sm.sendEvent(PaymentEvent.PRE_AUTH_APPROVED);
-        System.out.println(sm.getState().toString());
-        sm.sendEvent(PaymentEvent.PRE_AUTH_DECLINED);
+        System.out.println("Current SM state: " + sm.getState().toString());
+        sm.sendEvent(PaymentEvent.CREATE_PAYMENT);
+        System.out.println("State after creating payment: " + sm.getState().toString());
+        sm.sendEvent(PaymentEvent.SUBTRACT_MONEY);
+        System.out.println("State after subtracting money: " + sm.getState().toString());
+        sm.sendEvent(PaymentEvent.DECLINE_PAYMENT);
         System.out.println(sm.getState().toString());
 
     }

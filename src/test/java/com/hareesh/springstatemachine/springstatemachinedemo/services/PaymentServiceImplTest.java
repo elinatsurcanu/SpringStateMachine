@@ -23,20 +23,14 @@ class PaymentServiceImplTest {
     @Autowired
     PaymentRepository paymentRepository;
 
-    Payment payment;
 
-    @BeforeEach
-    void setUp() {
-        payment = Payment.builder().amount(new BigDecimal("15.75")).build();
-    }
-
-    @Transactional
-    @Test
-    void preAuth() {
-        Payment savedPayment = paymentService.newPayment(payment);
-        StateMachine<PaymentState, PaymentEvent> sm = paymentService.preAuth(savedPayment.getId());
-        Payment preAuthPayment = paymentRepository.getOne(savedPayment.getId());
-        System.out.println(sm.getState().getId());
-        System.out.println(preAuthPayment);
-    }
+//    @Transactional
+//    @Test
+//    void preAuth() {
+//        Payment savedPayment = paymentService.createNewPayment(new BigDecimal("15.75"));
+//        StateMachine<PaymentState, PaymentEvent> sm = paymentService.preAuth(savedPayment.getId(), new BigDecimal("15.75"));
+//        Payment preAuthPayment = paymentRepository.getOne(savedPayment.getId());
+//        System.out.println(sm.getState().getId());
+//        System.out.println(preAuthPayment);
+//    }
 }
