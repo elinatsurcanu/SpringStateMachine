@@ -50,13 +50,12 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public Payment processPayment(Long paymentId) {
         Payment payment = repository.getPaymentById(paymentId);
+        StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
         if (payment.getAmount().compareTo(Account.accountBalance) < 0) {
             Account.accountBalance = Account.accountBalance.subtract(payment.getAmount());
-            StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
             sendEvent(paymentId, sm, PaymentEvent.SUBTRACT_MONEY);
             payment.setState(sm.getState().getId());
         } else {
-            StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
             sendEvent(paymentId, sm, PaymentEvent.DECLINE_PAYMENT);
             payment.setState(sm.getState().getId());
             throw new RuntimeException("Not enough balance");
@@ -74,7 +73,11 @@ public class PaymentServiceImpl implements PaymentService {
     public void preAuth(Long paymentId, BigDecimal amount, StateMachine<PaymentState, PaymentEvent> sm) {
         sm.getExtendedState().getVariables().put("amount", amount);
         sm.getExtendedState().getVariables().put("paymentId", paymentId);
-        sendEvent(paymentId, sm, PaymentEvent.CREATE_PAYMENT);
+        if(amount.compareTo(BigDecimal.valueOf(50000L)) < 0) {
+            sendEvent(paymentId, sm, PaymentEvent.CREATE_PAYMENT);
+        } else {
+            sendEvent(paymentId, sm, PaymentEvent.DECLINE_PAYMENT);
+        }
     }
 
     @Override
@@ -82,14 +85,6 @@ public class PaymentServiceImpl implements PaymentService {
         return null;
     }
 
-//    @Transactional
-//    @Override
-//    public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
-//        StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
-//        sendEvent(paymentId, sm, PaymentEvent.AUTH_APPROVED);
-//
-//        return sm;
-//    }
 
     @Transactional
     @Override
