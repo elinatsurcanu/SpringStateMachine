@@ -3,7 +3,6 @@ package com.hareesh.springstatemachine.springstatemachinedemo.config;
 import com.hareesh.springstatemachine.springstatemachinedemo.domain.Account;
 import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentEvent;
 import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentState;
-import com.hareesh.springstatemachine.springstatemachinedemo.services.PaymentServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.action.Action;
@@ -37,13 +36,12 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
     @Override
     public void configure(StateMachineTransitionConfigurer<PaymentState, PaymentEvent> transitions) throws Exception {
         transitions.withExternal().source(PaymentState.INITIAL).target(PaymentState.NEW).event(PaymentEvent.CREATE_PAYMENT)
-                .action(preAuthAction()).guard(paymentIdGuard())
+                .guard(checkPaymentAmountGuard())
                 .and()
                 .withExternal().source(PaymentState.INITIAL).target(PaymentState.DECLINED).event(PaymentEvent.DECLINE_PAYMENT)
-                .action(preAuthAction()).guard(paymentIdGuard())
                 .and()
                 .withExternal().source(PaymentState.NEW).target(PaymentState.SUCCESS).event(PaymentEvent.SUBTRACT_MONEY)
-                .action(processPaymentAction()).guard(paymentIdGuard())
+                .action(processPaymentAction())
                 .and()
                 .withExternal().source(PaymentState.NEW).target(PaymentState.DECLINED).event(PaymentEvent.DECLINE_PAYMENT)
                 .action(processPaymentAction());
@@ -61,22 +59,12 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
         config.withConfiguration().listener(adapter);
     }
 
-    public Guard<PaymentState, PaymentEvent> paymentIdGuard() {
-        return context -> context.getMessageHeader(PaymentServiceImpl.PAYMENT_ID_HEADER) != null;
-    }
-
-    public Action<PaymentState, PaymentEvent> preAuthAction() {
+    public Guard<PaymentState, PaymentEvent> checkPaymentAmountGuard() {
         return context -> {
             BigDecimal amount = context.getExtendedState().get("amount", BigDecimal.class);
-            Long paymentId = context.getExtendedState().get("paymentId", Long.class);
-            System.out.println("PreAuth was called!!!");
+            System.out.println("Checking the payment amount...");
 
-            if (amount.compareTo(BigDecimal.valueOf(50000L)) < 0) {
-                System.out.println("Initiate payment approved for paymentId " + paymentId + " with amount " + amount);
-
-            } else {
-                System.out.println("Declined! Payment with id " + paymentId + ", amount = " + amount + " exceeds the limit.");
-            }
+            return amount.compareTo(BigDecimal.valueOf(50000L)) < 0;
         };
     }
 
