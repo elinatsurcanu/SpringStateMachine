@@ -4,6 +4,7 @@ import com.hareesh.springstatemachine.springstatemachinedemo.domain.Account;
 import com.hareesh.springstatemachine.springstatemachinedemo.domain.Payment;
 import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentEvent;
 import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentState;
+import com.hareesh.springstatemachine.springstatemachinedemo.exception.InsufficientFundsException;
 import com.hareesh.springstatemachine.springstatemachinedemo.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
@@ -12,7 +13,6 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -34,7 +34,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Payment createNewPayment(BigDecimal amount) {
+    public Payment createNewPayment(BigDecimal amount) throws InsufficientFundsException {
         Payment payment = new Payment();
         payment.setAmount(amount);
         payment.setState(PaymentState.INITIAL);
@@ -43,60 +43,46 @@ public class PaymentServiceImpl implements PaymentService {
         StateMachine<PaymentState, PaymentEvent> sm = build(payment.getId());
         preAuth(createdPayment.getId(), amount, sm);
 
-        payment.setState(sm.getState().getId());
-        return repository.save(payment);
+        return payment;
     }
 
     @Override
-    public Payment processPayment(Long paymentId) {
-        Payment payment = repository.getPaymentById(paymentId);
+    public Payment processPayment(Long paymentId) throws InsufficientFundsException {
+        Payment payment = getPaymentById(paymentId);
+        if(payment == null) {
+            throw new RuntimeException("Payment with id " + paymentId + " not found");
+        }
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
         if (payment.getAmount().compareTo(Account.accountBalance) < 0) {
             Account.accountBalance = Account.accountBalance.subtract(payment.getAmount());
             sendEvent(paymentId, sm, PaymentEvent.SUBTRACT_MONEY);
-            payment.setState(sm.getState().getId());
         } else {
             sendEvent(paymentId, sm, PaymentEvent.DECLINE_PAYMENT);
-            payment.setState(sm.getState().getId());
-            throw new RuntimeException("Not enough balance");
+            throw new InsufficientFundsException("Not enough balance");
         }
-        return repository.save(payment);
+        return payment;
     }
 
     @Override
     public List<Payment> getAllPayments() {
-        return repository.getPayments();
+        return repository.findAll();
     }
 
-
     @Override
-    public void preAuth(Long paymentId, BigDecimal amount, StateMachine<PaymentState, PaymentEvent> sm) {
+    public void preAuth(Long paymentId, BigDecimal amount, StateMachine<PaymentState, PaymentEvent> sm) throws InsufficientFundsException {
         sm.getExtendedState().getVariables().put("amount", amount);
         sm.getExtendedState().getVariables().put("paymentId", paymentId);
         if(amount.compareTo(BigDecimal.valueOf(50000L)) < 0) {
             sendEvent(paymentId, sm, PaymentEvent.CREATE_PAYMENT);
         } else {
             sendEvent(paymentId, sm, PaymentEvent.DECLINE_PAYMENT);
+            throw new InsufficientFundsException("The amount is bigger than 50 000, payment is declined.");
         }
     }
 
-    @Override
-    public StateMachine<PaymentState, PaymentEvent> authorizePayment(Long paymentId) {
-        return null;
-    }
-
-
-    @Transactional
-    @Override
-    public StateMachine<PaymentState, PaymentEvent> declineAuth(Long paymentId) {
-        StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
-        sendEvent(paymentId, sm, PaymentEvent.DECLINE_PAYMENT);
-
-        return sm;
-    }
 
     private void sendEvent(Long paymentId, StateMachine<PaymentState, PaymentEvent> sm, PaymentEvent event){
-        Message msg = MessageBuilder.withPayload(event)
+        Message<PaymentEvent> msg = MessageBuilder.withPayload(event)
                 .setHeader(PAYMENT_ID_HEADER, paymentId)
                 .build();
 

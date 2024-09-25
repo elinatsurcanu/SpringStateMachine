@@ -1,6 +1,8 @@
 package com.hareesh.springstatemachine.springstatemachinedemo.controller;
 
+import com.hareesh.springstatemachine.springstatemachinedemo.domain.Account;
 import com.hareesh.springstatemachine.springstatemachinedemo.domain.Payment;
+import com.hareesh.springstatemachine.springstatemachinedemo.exception.InsufficientFundsException;
 import com.hareesh.springstatemachine.springstatemachinedemo.services.PaymentServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -8,7 +10,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+
+import static com.hareesh.springstatemachine.springstatemachinedemo.exception.ExceptionHandler.handleException;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,20 +34,26 @@ public class PaymentController {
     }
 
     @PostMapping(value = "/payment", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Payment> createNewPayment(@RequestBody Payment payment) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(paymentService.createNewPayment(payment.getAmount()));
+    public ResponseEntity<?> createNewPayment(@RequestBody Payment payment) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(paymentService.createNewPayment(payment.getAmount()));
+        } catch (InsufficientFundsException e) {
+            return handleException(e.getMessage());
+        }
     }
 
     @PostMapping(value = "/process/payment/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Payment> processPayment(@PathVariable(value = "id") Long paymentId) {
+    public ResponseEntity<?> processPayment(@PathVariable(value = "id") Long paymentId) {
         try {
             paymentService.processPayment(paymentId);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+            return handleException(e.getMessage());
         }
-        return ResponseEntity.status(HttpStatus.OK).body(null);
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("currentBalance", Account.accountBalance);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
-
 
 }
