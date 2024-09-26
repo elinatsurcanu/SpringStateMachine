@@ -13,6 +13,7 @@ public class ExceptionHandler {
     public static ResponseEntity<HashMap<String, String>> handleException(String errorMsg) {
         HashMap<String, String> errorMap = new HashMap<>();
         errorMap.put("error", errorMsg);
+        errorMap.put("status", "declined");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorMap);
     }
 }
