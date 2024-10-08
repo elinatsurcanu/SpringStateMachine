@@ -1,9 +1,9 @@
-package com.hareesh.springstatemachine.springstatemachinedemo.services;
+package com.hareesh.springstatemachine.springstatemachinedemo.payment.services;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.Payment;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentEvent;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentState;
-import com.hareesh.springstatemachine.springstatemachinedemo.exception.InsufficientFundsException;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Payment;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentEvent;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentState;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.InsufficientFundsException;
 import org.springframework.statemachine.StateMachine;
 
 import java.math.BigDecimal;

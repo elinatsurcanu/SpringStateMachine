@@ -1,4 +1,4 @@
-package com.hareesh.springstatemachine.springstatemachinedemo.exception;
+package com.hareesh.springstatemachine.springstatemachinedemo.payment.exception;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

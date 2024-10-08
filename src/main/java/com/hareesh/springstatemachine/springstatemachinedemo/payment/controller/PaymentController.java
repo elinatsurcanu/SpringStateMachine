@@ -1,9 +1,9 @@
-package com.hareesh.springstatemachine.springstatemachinedemo.controller;
+package com.hareesh.springstatemachine.springstatemachinedemo.payment.controller;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.Account;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.Payment;
-import com.hareesh.springstatemachine.springstatemachinedemo.exception.InsufficientFundsException;
-import com.hareesh.springstatemachine.springstatemachinedemo.services.PaymentServiceImpl;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Account;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Payment;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.InsufficientFundsException;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.services.PaymentServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 
-import static com.hareesh.springstatemachine.springstatemachinedemo.exception.ExceptionHandler.handleException;
+import static com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.ExceptionHandler.handleException;
 
 @RestController
 @RequiredArgsConstructor

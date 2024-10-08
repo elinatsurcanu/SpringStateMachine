@@ -1,12 +1,14 @@
-package com.hareesh.springstatemachine.springstatemachinedemo.services;
+package com.hareesh.springstatemachine.springstatemachinedemo.payment.services;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.Account;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.Payment;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentEvent;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentState;
-import com.hareesh.springstatemachine.springstatemachinedemo.exception.InsufficientFundsException;
-import com.hareesh.springstatemachine.springstatemachinedemo.repository.PaymentRepository;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Account;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Payment;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentEvent;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentState;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.InsufficientFundsException;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateMachine;
@@ -19,6 +21,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Service
 public class PaymentServiceImpl implements PaymentService {
+
+    final static Logger LOGGER = LoggerFactory.getLogger(PaymentServiceImpl.class);
 
     public static final String PAYMENT_ID_HEADER = "payment_id";
 
@@ -50,6 +54,7 @@ public class PaymentServiceImpl implements PaymentService {
     public Payment processPayment(Long paymentId) throws InsufficientFundsException {
         Payment payment = getPaymentById(paymentId);
         if(payment == null) {
+            LOGGER.error("Payment with id {} not found", paymentId);
             throw new RuntimeException("Payment with id " + paymentId + " not found");
         }
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
@@ -58,6 +63,7 @@ public class PaymentServiceImpl implements PaymentService {
             sendEvent(paymentId, sm, PaymentEvent.SUBTRACT_MONEY);
         } else {
             sendEvent(paymentId, sm, PaymentEvent.DECLINE_PAYMENT);
+            LOGGER.error("Payment with id {} has been declined. Not enough money", paymentId);
             throw new InsufficientFundsException("Not enough balance");
         }
         return payment;
@@ -76,6 +82,7 @@ public class PaymentServiceImpl implements PaymentService {
             sendEvent(paymentId, sm, PaymentEvent.CREATE_PAYMENT);
         } else {
             sendEvent(paymentId, sm, PaymentEvent.DECLINE_PAYMENT);
+            LOGGER.error("Payment with id {} has been declined. The amount {} is bigger than 50 000", paymentId, amount);
             throw new InsufficientFundsException("The amount is bigger than 50 000, payment is declined.");
         }
     }

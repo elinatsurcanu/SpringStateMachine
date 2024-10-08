@@ -1,4 +1,4 @@
-package com.hareesh.springstatemachine.springstatemachinedemo.exception;
+package com.hareesh.springstatemachine.springstatemachinedemo.payment.exception;
 
 public class InsufficientFundsException extends Exception {
 

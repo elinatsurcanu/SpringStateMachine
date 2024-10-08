@@ -1,9 +1,10 @@
-package com.hareesh.springstatemachine.springstatemachinedemo.config;
+package com.hareesh.springstatemachine.springstatemachinedemo.payment.config;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.Account;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentEvent;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentState;
-import lombok.extern.slf4j.Slf4j;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Account;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentEvent;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachine;
@@ -18,10 +19,11 @@ import org.springframework.statemachine.state.State;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 
-@Slf4j
 @EnableStateMachine
 @Configuration
 public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentState, PaymentEvent> {
+
+    final static Logger LOGGER = LoggerFactory.getLogger(StateMachineConfig.class);
 
     @Override
     public void configure(StateMachineStateConfigurer<PaymentState, PaymentEvent> states) throws Exception {
@@ -53,7 +55,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
             @Override
             public void stateChanged(State<PaymentState, PaymentEvent> from, State<PaymentState, PaymentEvent> to) {
                 if (from != null) {
-                    log.info("State Changed from : {}, to: {}", from.getIds(), to.getIds());
+                    LOGGER.info("State Changed from : {}, to: {}", from.getIds(), to.getIds());
                 }
             }
         };
@@ -64,7 +66,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
     public Guard<PaymentState, PaymentEvent> checkPaymentAmountGuard() {
         return context -> {
             BigDecimal amount = context.getExtendedState().get("amount", BigDecimal.class);
-            System.out.println("Checking the payment amount...");
+            LOGGER.info("Checking the payment amount...");
 
             return amount.compareTo(BigDecimal.valueOf(50000L)) < 0;
         };
@@ -74,11 +76,11 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
         return context -> {
             BigDecimal amount = context.getExtendedState().get("amount", BigDecimal.class);
             Long paymentId = context.getExtendedState().get("paymentId", Long.class);
-            System.out.println("Process payment action called for payment with id = " + paymentId);
+            LOGGER.info("Process payment action called for payment with id = " + paymentId);
             if (Account.accountBalance.compareTo(amount) < 0) {
-                System.out.println("Subtracting the money from the account");
+                LOGGER.info("Subtracting the money from the account");
             } else {
-                System.out.println("Declined, the amount is bigger than the balance.");
+                LOGGER.warn("Declined, the amount is bigger than the balance.");
             }
         };
     }

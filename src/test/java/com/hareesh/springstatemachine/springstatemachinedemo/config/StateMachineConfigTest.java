@@ -1,7 +1,7 @@
 package com.hareesh.springstatemachine.springstatemachinedemo.config;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentEvent;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentState;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentEvent;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentState;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;

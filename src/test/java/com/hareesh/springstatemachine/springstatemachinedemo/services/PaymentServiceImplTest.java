@@ -1,17 +1,9 @@
 package com.hareesh.springstatemachine.springstatemachinedemo.services;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.Payment;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentEvent;
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.PaymentState;
-import com.hareesh.springstatemachine.springstatemachinedemo.repository.PaymentRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.repository.PaymentRepository;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.services.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.statemachine.StateMachine;
-
-import javax.transaction.Transactional;
-import java.math.BigDecimal;
 
 
 @SpringBootTest

@@ -1,6 +1,6 @@
-package com.hareesh.springstatemachine.springstatemachinedemo.repository;
+package com.hareesh.springstatemachine.springstatemachinedemo.payment.repository;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.domain.Payment;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

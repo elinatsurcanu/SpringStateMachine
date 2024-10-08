@@ -1,4 +1,4 @@
-package com.hareesh.springstatemachine.springstatemachinedemo.domain;
+package com.hareesh.springstatemachine.springstatemachinedemo.payment.domain;
 
 
 import lombok.AllArgsConstructor;
