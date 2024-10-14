@@ -4,6 +4,7 @@ import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Paym
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentEvent;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentState;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.InsufficientFundsException;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.PaymentException;
 import org.springframework.statemachine.StateMachine;
 
 import java.math.BigDecimal;
@@ -17,7 +18,7 @@ public interface PaymentService {
 
     Payment createNewPayment(BigDecimal amount) throws InsufficientFundsException;
 
-    Payment processPayment(Long paymentId) throws InsufficientFundsException;
+    Payment processPayment(Long paymentId) throws InsufficientFundsException, PaymentException;
 
     List<Payment> getAllPayments();
 

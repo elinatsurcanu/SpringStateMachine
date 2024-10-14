@@ -1,6 +1,5 @@
 package com.hareesh.springstatemachine.springstatemachinedemo.payment.config;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Account;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentEvent;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentState;
 import org.slf4j.Logger;
@@ -23,7 +22,7 @@ import java.util.EnumSet;
 @Configuration
 public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentState, PaymentEvent> {
 
-    final static Logger LOGGER = LoggerFactory.getLogger(StateMachineConfig.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(StateMachineConfig.class);
 
     @Override
     public void configure(StateMachineStateConfigurer<PaymentState, PaymentEvent> states) throws Exception {
@@ -76,12 +75,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
         return context -> {
             BigDecimal amount = context.getExtendedState().get("amount", BigDecimal.class);
             Long paymentId = context.getExtendedState().get("paymentId", Long.class);
-            LOGGER.info("Process payment action called for payment with id = " + paymentId);
-            if (Account.accountBalance.compareTo(amount) < 0) {
-                LOGGER.info("Subtracting the money from the account");
-            } else {
-                LOGGER.warn("Declined, the amount is bigger than the balance.");
-            }
+            LOGGER.info("Process payment action called for payment with id = {} and amount = {}", paymentId, amount);
         };
     }
 }

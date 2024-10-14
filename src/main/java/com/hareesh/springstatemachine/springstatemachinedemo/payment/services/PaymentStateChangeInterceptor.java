@@ -20,7 +20,7 @@ import java.util.Optional;
 @Component
 public class PaymentStateChangeInterceptor extends StateMachineInterceptorAdapter<PaymentState, PaymentEvent> {
 
-    final static Logger LOGGER = LoggerFactory.getLogger(PaymentStateChangeInterceptor.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(PaymentStateChangeInterceptor.class);
 
     private final PaymentRepository paymentRepository;
 
@@ -30,12 +30,17 @@ public class PaymentStateChangeInterceptor extends StateMachineInterceptorAdapte
 
         Optional.ofNullable(message).flatMap(msg -> Optional.ofNullable((Long) msg.getHeaders().getOrDefault(
                 PaymentServiceImpl.PAYMENT_ID_HEADER, -1L))).ifPresent(paymentId -> {
-            LOGGER.info("Interceptor at work before the transition from state {} to {}",
-                    transition.getSource() != null ? transition.getSource().getId() : "Unknown",
-                    state.getId());
-            Payment payment = paymentRepository.getOne(paymentId);
-            payment.setState(state.getId());
-            paymentRepository.save(payment);
+            Payment payment = paymentRepository.getPaymentById(paymentId);
+            if (payment != null) {
+                PaymentState fromState = payment.getState();
+                PaymentState toState = state.getId();
+
+                if (fromState != toState) {
+                    payment.setState(toState);
+                    paymentRepository.save(payment);
+                    LOGGER.info("Payment {} state changed from {} to {}", paymentId, fromState, toState);
+                }
+            }
         });
     }
 

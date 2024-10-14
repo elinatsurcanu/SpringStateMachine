@@ -5,6 +5,7 @@ import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Paym
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentEvent;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentState;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.InsufficientFundsException;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.PaymentException;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -22,7 +23,7 @@ import java.util.List;
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
-    final static Logger LOGGER = LoggerFactory.getLogger(PaymentServiceImpl.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(PaymentServiceImpl.class);
 
     public static final String PAYMENT_ID_HEADER = "payment_id";
 
@@ -51,14 +52,23 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Payment processPayment(Long paymentId) throws InsufficientFundsException {
+    public Payment processPayment(Long paymentId) throws InsufficientFundsException, PaymentException {
+        stateMachine.getExtendedState().getVariables().clear();
+
         Payment payment = getPaymentById(paymentId);
-        if(payment == null) {
+        stateMachine.getExtendedState().getVariables().put("paymentId", paymentId);
+        stateMachine.getExtendedState().getVariables().put("amount", payment.getAmount());
+
+        if (payment == null) {
             LOGGER.error("Payment with id {} not found", paymentId);
-            throw new RuntimeException("Payment with id " + paymentId + " not found");
+            throw new PaymentException("Payment with id " + paymentId + " not found");
+        } else if (PaymentState.SUCCESS.equals(payment.getState()) ||
+                PaymentState.DECLINED.equals(payment.getState())) {
+            LOGGER.error("Payment with id {} already processed", paymentId);
+            throw new PaymentException("Payment with id " + paymentId + " already processed");
         }
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
-        if (payment.getAmount().compareTo(Account.accountBalance) < 0) {
+        if (payment.getAmount().compareTo(Account.accountBalance) <= 0) {
             Account.accountBalance = Account.accountBalance.subtract(payment.getAmount());
             sendEvent(paymentId, sm, PaymentEvent.SUBTRACT_MONEY);
         } else {
