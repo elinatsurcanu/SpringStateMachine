@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static java.lang.String.format;
+
 @RequiredArgsConstructor
 @Service
 public class PaymentServiceImpl implements PaymentService {
@@ -88,12 +90,12 @@ public class PaymentServiceImpl implements PaymentService {
     public void preAuth(Long paymentId, BigDecimal amount, StateMachine<PaymentState, PaymentEvent> sm) throws InsufficientFundsException {
         sm.getExtendedState().getVariables().put("amount", amount);
         sm.getExtendedState().getVariables().put("paymentId", paymentId);
-        if(amount.compareTo(BigDecimal.valueOf(50000L)) < 0) {
+        if(amount.compareTo(Account.limitPerPayment) <= 0) {
             sendEvent(paymentId, sm, PaymentEvent.CREATE_PAYMENT);
         } else {
             sendEvent(paymentId, sm, PaymentEvent.DECLINE_PAYMENT);
-            LOGGER.error("Payment with id {} has been declined. The amount {} is bigger than 50 000", paymentId, amount);
-            throw new InsufficientFundsException("The amount is bigger than 50 000, payment is declined.");
+            LOGGER.error("Payment with id {} has been declined. The amount {} is bigger than {}", paymentId, amount, Account.limitPerPayment);
+            throw new InsufficientFundsException(format("The amount is bigger than %s, payment is declined.", Account.limitPerPayment));
         }
     }
 

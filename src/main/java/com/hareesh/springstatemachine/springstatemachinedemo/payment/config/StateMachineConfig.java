@@ -1,5 +1,6 @@
 package com.hareesh.springstatemachine.springstatemachinedemo.payment.config;
 
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Account;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentEvent;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentState;
 import org.slf4j.Logger;
@@ -17,6 +18,8 @@ import org.springframework.statemachine.state.State;
 
 import java.math.BigDecimal;
 import java.util.EnumSet;
+
+import static java.lang.String.format;
 
 @EnableStateMachine
 @Configuration
@@ -36,15 +39,23 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
 
     @Override
     public void configure(StateMachineTransitionConfigurer<PaymentState, PaymentEvent> transitions) throws Exception {
-        transitions.withExternal().source(PaymentState.INITIAL).target(PaymentState.NEW).event(PaymentEvent.CREATE_PAYMENT)
-                .guard(checkPaymentAmountGuard())
+        transitions
+                .withExternal()
+                .source(PaymentState.INITIAL).target(PaymentState.NEW).event(PaymentEvent.CREATE_PAYMENT)
+//                .guard(checkPaymentAmountGuard())
                 .and()
-                .withExternal().source(PaymentState.INITIAL).target(PaymentState.DECLINED).event(PaymentEvent.DECLINE_PAYMENT)
+
+                .withExternal()
+                .source(PaymentState.INITIAL).target(PaymentState.DECLINED).event(PaymentEvent.DECLINE_PAYMENT)
                 .and()
-                .withExternal().source(PaymentState.NEW).target(PaymentState.SUCCESS).event(PaymentEvent.SUBTRACT_MONEY)
+
+                .withExternal()
+                .source(PaymentState.NEW).target(PaymentState.SUCCESS).event(PaymentEvent.SUBTRACT_MONEY)
                 .action(processPaymentAction())
                 .and()
-                .withExternal().source(PaymentState.NEW).target(PaymentState.DECLINED).event(PaymentEvent.DECLINE_PAYMENT)
+
+                .withExternal()
+                .source(PaymentState.NEW).target(PaymentState.DECLINED).event(PaymentEvent.DECLINE_PAYMENT)
                 .action(processPaymentAction());
     }
 
@@ -65,9 +76,16 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
     public Guard<PaymentState, PaymentEvent> checkPaymentAmountGuard() {
         return context -> {
             BigDecimal amount = context.getExtendedState().get("amount", BigDecimal.class);
+            Long paymentId = context.getExtendedState().get("paymentId", Long.class);
+
             LOGGER.info("Checking the payment amount...");
 
-            return amount.compareTo(BigDecimal.valueOf(50000L)) < 0;
+            boolean isValidAmount = amount != null && amount.compareTo(Account.limitPerPayment) <= 0;
+
+            if(!isValidAmount) {
+                LOGGER.error("Payment with id {} has been declined. The amount {} is bigger than {}", paymentId, amount, Account.limitPerPayment);
+            }
+            return isValidAmount;
         };
     }
 

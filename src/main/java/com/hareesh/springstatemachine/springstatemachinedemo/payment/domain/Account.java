@@ -10,5 +10,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Account {
 
-    public static BigDecimal accountBalance = new BigDecimal("100.00");
+    public static BigDecimal accountBalance = new BigDecimal("1000.00");
+
+    public static BigDecimal limitPerPayment = new BigDecimal("500.00");
 }

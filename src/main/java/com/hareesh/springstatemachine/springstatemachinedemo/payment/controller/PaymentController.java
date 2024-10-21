@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 
@@ -37,6 +38,16 @@ public class PaymentController {
     public ResponseEntity<List<Payment>> getAllPayments() {
         return ResponseEntity.ok()
                 .body(paymentService.getAllPayments());
+    }
+
+    @GetMapping(value = "/currentBalance", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<HashMap<String, BigDecimal>> getAvailableFunds() {
+        final HashMap<String, BigDecimal> availableFunds = new HashMap<>();
+        availableFunds.put("availableFunds", Account.accountBalance);
+        availableFunds.put("limitPerPayment", BigDecimal.valueOf(500L));
+
+        return ResponseEntity.ok()
+                .body(availableFunds);
     }
 
     @PostMapping(value = "/payment", consumes = MediaType.APPLICATION_JSON_VALUE)
