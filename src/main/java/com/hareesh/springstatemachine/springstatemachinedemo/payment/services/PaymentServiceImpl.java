@@ -58,8 +58,6 @@ public class PaymentServiceImpl implements PaymentService {
         stateMachine.getExtendedState().getVariables().clear();
 
         Payment payment = getPaymentById(paymentId);
-        stateMachine.getExtendedState().getVariables().put("paymentId", paymentId);
-        stateMachine.getExtendedState().getVariables().put("amount", payment.getAmount());
 
         if (payment == null) {
             LOGGER.error("Payment with id {} not found", paymentId);
@@ -69,6 +67,9 @@ public class PaymentServiceImpl implements PaymentService {
             LOGGER.error("Payment with id {} already processed", paymentId);
             throw new PaymentException("Payment with id " + paymentId + " already processed");
         }
+        stateMachine.getExtendedState().getVariables().put("paymentId", paymentId);
+        stateMachine.getExtendedState().getVariables().put("amount", payment.getAmount());
+
         StateMachine<PaymentState, PaymentEvent> sm = build(paymentId);
         if (payment.getAmount().compareTo(Account.accountBalance) <= 0) {
             Account.accountBalance = Account.accountBalance.subtract(payment.getAmount());
