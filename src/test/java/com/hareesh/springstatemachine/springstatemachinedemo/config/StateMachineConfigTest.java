@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.statemachine.StateMachine;
+import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.guard.Guard;
 
 import java.math.BigDecimal;
@@ -19,14 +20,15 @@ import static org.mockito.Mockito.when;
 class StateMachineConfigTest {
 
     @Autowired
-    private StateMachine<PaymentState, PaymentEvent> sm;
+    private StateMachineFactory<PaymentState, PaymentEvent> smFactory;
 
     @Mock
     private Guard<PaymentState, PaymentEvent> checkPaymentAmountGuard;
 
-
     @Test
     void testStateMachinePositiveFlow() {
+        StateMachine<PaymentState, PaymentEvent> sm = smFactory.getStateMachine();
+
         sm.getExtendedState().getVariables().put("amount", BigDecimal.TEN);
         when(checkPaymentAmountGuard.evaluate(any())).thenReturn(true);
 

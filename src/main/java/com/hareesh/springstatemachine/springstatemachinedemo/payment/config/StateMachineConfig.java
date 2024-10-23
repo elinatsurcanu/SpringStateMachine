@@ -7,8 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.action.Action;
-import org.springframework.statemachine.config.EnableStateMachine;
-import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
+import org.springframework.statemachine.config.EnableStateMachineFactory;
+import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
@@ -19,11 +19,9 @@ import org.springframework.statemachine.state.State;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 
-import static java.lang.String.format;
-
-@EnableStateMachine
+@EnableStateMachineFactory
 @Configuration
-public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentState, PaymentEvent> {
+public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<PaymentState, PaymentEvent> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(StateMachineConfig.class);
 
@@ -42,7 +40,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
         transitions
                 .withExternal()
                 .source(PaymentState.INITIAL).target(PaymentState.NEW).event(PaymentEvent.CREATE_PAYMENT)
-//                .guard(checkPaymentAmountGuard())
+                .guard(checkPaymentAmountGuard())
                 .and()
 
                 .withExternal()
@@ -70,22 +68,19 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
             }
         };
 
-        config.withConfiguration().listener(adapter);
+        config
+                .withConfiguration()
+                .listener(adapter);
     }
 
     public Guard<PaymentState, PaymentEvent> checkPaymentAmountGuard() {
         return context -> {
             BigDecimal amount = context.getExtendedState().get("amount", BigDecimal.class);
-            Long paymentId = context.getExtendedState().get("paymentId", Long.class);
 
             LOGGER.info("Checking the payment amount...");
 
-            boolean isValidAmount = amount != null && amount.compareTo(Account.limitPerPayment) <= 0;
+            return amount != null && amount.compareTo(Account.limitPerPayment) <= 0;
 
-            if(!isValidAmount) {
-                LOGGER.error("Payment with id {} has been declined. The amount {} is bigger than {}", paymentId, amount, Account.limitPerPayment);
-            }
-            return isValidAmount;
         };
     }
 
