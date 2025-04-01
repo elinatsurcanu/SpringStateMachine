@@ -1,7 +1,7 @@
 package com.hareesh.springstatemachine.springstatemachinedemo.config;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentEvent;
-import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.PaymentState;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.OrderEvent;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.OrderState;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,27 +20,27 @@ import static org.mockito.Mockito.when;
 class StateMachineConfigTest {
 
     @Autowired
-    private StateMachineFactory<PaymentState, PaymentEvent> smFactory;
+    private StateMachineFactory<OrderState, OrderEvent> smFactory;
 
     @Mock
-    private Guard<PaymentState, PaymentEvent> checkPaymentAmountGuard;
+    private Guard<OrderState, OrderEvent> checkPaymentAmountGuard;
 
     @Test
     void testStateMachinePositiveFlow() {
-        StateMachine<PaymentState, PaymentEvent> sm = smFactory.getStateMachine();
+        StateMachine<OrderState, OrderEvent> sm = smFactory.getStateMachine();
 
         sm.getExtendedState().getVariables().put("amount", BigDecimal.TEN);
         when(checkPaymentAmountGuard.evaluate(any())).thenReturn(true);
 
         sm.start();
 
-        assertEquals(PaymentState.INITIAL.name(), sm.getState().getId().name());
+        assertEquals(OrderState.INITIAL.name(), sm.getState().getId().name());
 
-        sm.sendEvent(PaymentEvent.CREATE_PAYMENT);
-        assertEquals(PaymentState.NEW.name(), sm.getState().getId().name());
+        sm.sendEvent(OrderEvent.CREATE_ORDER);
+        assertEquals(OrderState.NEW.name(), sm.getState().getId().name());
 
-        sm.sendEvent(PaymentEvent.SUBTRACT_MONEY);
-        assertEquals(PaymentState.SUCCESS.name(), sm.getState().getId().name());
+        sm.sendEvent(OrderEvent.PROCESS_ORDER);
+        assertEquals(OrderState.PROCESSED.name(), sm.getState().getId().name());
     }
 
 }
