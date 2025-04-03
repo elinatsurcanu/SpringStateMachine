@@ -40,7 +40,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public CustomerOrder createNewOrder(CustomerOrder order) throws InsufficientFundsException {
-       // customerOrder.setTotalCost(customerOrder.getTotalCost());
         order.setState(OrderState.INITIAL);
 
         BigDecimal totalCost = calculateTotalCost(order);

@@ -9,12 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 
 import static com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.ExceptionHandler.handleInsufficientFundsException;
 import static com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.ExceptionHandler.handlePaymentException;
@@ -25,27 +24,27 @@ public class OrderController {
 
     private final OrderServiceImpl orderService;
 
-//    @GetMapping(value = "/payment/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-//    public ResponseEntity<Order> getPaymentById(@PathVariable(value = "id") Long paymentId)  {
-//        return ResponseEntity.ok()
-//                .body(orderService.getOrderById(paymentId));
-//    }
-//
-//    @GetMapping(value = "/payments", produces = MediaType.APPLICATION_JSON_VALUE)
-//    public ResponseEntity<List<Order>> getAllPayments() {
-//        return ResponseEntity.ok()
-//                .body(orderService.getAllOrders());
-//    }
-//
-//    @GetMapping(value = "/currentBalance", produces = MediaType.APPLICATION_JSON_VALUE)
-//    public ResponseEntity<HashMap<String, BigDecimal>> getAvailableFunds() {
-//        final HashMap<String, BigDecimal> availableFunds = new HashMap<>();
-//        availableFunds.put("availableFunds", Account.accountBalance);
-//        availableFunds.put("limitPerPayment", BigDecimal.valueOf(500L));
-//
-//        return ResponseEntity.ok()
-//                .body(availableFunds);
-//    }
+    @GetMapping(value = "/order/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CustomerOrder> getOrderById(@PathVariable(value = "id") Long orderId)  {
+        return ResponseEntity.ok()
+                .body(orderService.getOrderById(orderId));
+    }
+
+    @GetMapping(value = "/orders", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<CustomerOrder>> getAllOrders() {
+        return ResponseEntity.ok()
+                .body(orderService.getAllOrders());
+    }
+
+    @GetMapping(value = "/currentBalance", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<HashMap<String, BigDecimal>> getAvailableFunds() {
+        final HashMap<String, BigDecimal> availableFunds = new HashMap<>();
+        availableFunds.put("availableFunds", Account.accountBalance);
+        availableFunds.put("limitPerPayment", BigDecimal.valueOf(500L));
+
+        return ResponseEntity.ok()
+                .body(availableFunds);
+    }
 
     @PostMapping(value = "/order", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createNewOrder(@RequestBody CustomerOrder customerOrder) {
