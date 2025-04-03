@@ -1,7 +1,7 @@
 package com.hareesh.springstatemachine.springstatemachinedemo.payment.domain;
 
 
-import com.hareesh.springstatemachine.springstatemachinedemo.util.HashMapConverter;
+import com.hareesh.springstatemachine.springstatemachinedemo.util.ItemListConverter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +15,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import java.math.BigDecimal;
-import java.util.HashMap;
+import java.util.List;
 
 @Data
 @Builder
@@ -30,8 +30,8 @@ public class CustomerOrder {
     @Enumerated(EnumType.STRING)
     private OrderState state;
 
-    @Convert(converter = HashMapConverter.class)
-    private HashMap<Integer, Product> products;
+    @Convert(converter = ItemListConverter.class)
+    private List<Item> products;
 
     private BigDecimal totalCost;
 
