@@ -1,9 +1,6 @@
 package com.hareesh.springstatemachine.springstatemachinedemo.payment.services;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Account;
-import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.CustomerOrder;
-import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.OrderEvent;
-import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.OrderState;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.*;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.InsufficientFundsException;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.PaymentException;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.repository.OrderRepository;
@@ -45,6 +42,9 @@ public class OrderServiceImpl implements OrderService {
     public CustomerOrder createNewOrder(CustomerOrder order) throws InsufficientFundsException {
        // customerOrder.setTotalCost(customerOrder.getTotalCost());
         order.setState(OrderState.INITIAL);
+
+        BigDecimal totalCost = calculateTotalCost(order);
+        order.setTotalCost(totalCost);
 
         CustomerOrder createdCustomerOrder = repository.save(order);
 
@@ -126,5 +126,20 @@ public class OrderServiceImpl implements OrderService {
         stateMachine.start();
 
         return stateMachine;
+    }
+
+    private BigDecimal calculateTotalCost(CustomerOrder order) {
+        BigDecimal totalCost = BigDecimal.ZERO;
+        BigDecimal count;
+        BigDecimal price;
+
+        for(int i = 0; i < order.getProducts().size(); i++) {
+            count = order.getProducts().get(i).getCount();
+            price = order.getProducts().get(i).getProduct().getProductPrice();
+            totalCost = totalCost.add(count.multiply(price));
+        }
+
+        return totalCost;
+
     }
 }

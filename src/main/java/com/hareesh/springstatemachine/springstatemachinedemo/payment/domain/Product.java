@@ -10,8 +10,8 @@ import java.math.BigDecimal;
 public class Product implements Serializable {
 
     @JsonProperty("name")
-    String productName;
+    private String productName;
 
     @JsonProperty("price")
-    BigDecimal productPrice;
+    private BigDecimal productPrice;
 }
