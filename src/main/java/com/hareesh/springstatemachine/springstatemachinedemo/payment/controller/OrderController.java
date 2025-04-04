@@ -56,10 +56,10 @@ public class OrderController {
         }
     }
 
-    @PostMapping(value = "/process/payment/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> processPayment(@PathVariable(value = "id") Long paymentId) {
+    @PostMapping(value = "/process/order/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> processOrder(@PathVariable(value = "id") Long orderId) {
         try {
-            orderService.processOrder(paymentId);
+            orderService.processOrder(orderId);
         } catch (InsufficientFundsException e) {
             return handleInsufficientFundsException(e.getMessage());
         } catch (PaymentException e) {
