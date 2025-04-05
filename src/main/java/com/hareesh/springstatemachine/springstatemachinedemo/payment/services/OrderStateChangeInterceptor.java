@@ -29,8 +29,8 @@ public class OrderStateChangeInterceptor extends StateMachineInterceptorAdapter<
                                Transition<OrderState, OrderEvent> transition, StateMachine<OrderState, OrderEvent> stateMachine) {
 
         Optional.ofNullable(message).flatMap(msg -> Optional.ofNullable((Long) msg.getHeaders().getOrDefault(
-                OrderServiceImpl.PAYMENT_ID_HEADER, -1L))).ifPresent(paymentId -> {
-            CustomerOrder customerOrder = orderRepository.getOrderByOrderId(paymentId);
+                OrderServiceImpl.ORDER_ID_HEADER, -1L))).ifPresent(orderId -> {
+            CustomerOrder customerOrder = orderRepository.getOrderByOrderId(orderId);
             if (customerOrder != null) {
                 OrderState fromState = customerOrder.getState();
                 OrderState toState = state.getId();
@@ -38,7 +38,7 @@ public class OrderStateChangeInterceptor extends StateMachineInterceptorAdapter<
                 if (fromState != toState) {
                     customerOrder.setState(toState);
                     orderRepository.save(customerOrder);
-                    LOGGER.info("Payment {} state changed from {} to {}", paymentId, fromState, toState);
+                    LOGGER.info("Order with id {} state changed from {} to {}", orderId, fromState, toState);
                 }
             }
         });

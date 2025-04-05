@@ -7,12 +7,11 @@ import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.I
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.exception.PaymentException;
 import org.springframework.statemachine.StateMachine;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public interface OrderService {
 
-   void preAuth(Long paymentId, BigDecimal amount, StateMachine<OrderState, OrderEvent> sm) throws InsufficientFundsException;
+   void preAuth(CustomerOrder customerOrder, StateMachine<OrderState, OrderEvent> sm) throws InsufficientFundsException;
 
     CustomerOrder getOrderById(Long paymentId);
 

@@ -1,6 +1,6 @@
 package com.hareesh.springstatemachine.springstatemachinedemo.payment.config;
 
-import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Account;
+import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.Item;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.OrderEvent;
 import com.hareesh.springstatemachine.springstatemachinedemo.payment.domain.OrderState;
 import org.slf4j.Logger;
@@ -18,6 +18,8 @@ import org.springframework.statemachine.state.State;
 
 import java.math.BigDecimal;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @EnableStateMachineFactory
 @Configuration
@@ -40,7 +42,7 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<OrderS
         transitions
                 .withExternal()
                 .source(OrderState.INITIAL).target(OrderState.NEW).event(OrderEvent.CREATE_ORDER)
-                .guard(checkPaymentAmountGuard())
+                .guard(checkProductQuantityGuard())
                 .and()
 
                 .withExternal()
@@ -73,22 +75,24 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<OrderS
                 .listener(adapter);
     }
 
-    public Guard<OrderState, OrderEvent> checkPaymentAmountGuard() {
+    public Guard<OrderState, OrderEvent> checkProductQuantityGuard() {
         return context -> {
-            BigDecimal amount = context.getExtendedState().get("amount", BigDecimal.class);
-
-            LOGGER.info("Checking the payment amount...");
-
-            return amount != null && amount.compareTo(Account.limitPerPayment) <= 0;
-
+            List<Item> products = (List<Item>) context.getExtendedState().get("products", List.class);
+            List<BigDecimal> productQuantity = products.stream().map(Item::getCount).collect(Collectors.toList());
+            LOGGER.info("Checking whether the product quantity is within the limit, quantities: {}", productQuantity);
+           return isCountWithinTheLimit(productQuantity);
         };
+    }
+
+    public boolean isCountWithinTheLimit(List<BigDecimal> productQuantity) {
+        return productQuantity.stream().allMatch(count -> count != null && count.compareTo(BigDecimal.valueOf(20)) < 0);
     }
 
     public Action<OrderState, OrderEvent> processOrderAction() {
         return context -> {
-            BigDecimal amount = context.getExtendedState().get("amount", BigDecimal.class);
-            Long paymentId = context.getExtendedState().get("paymentId", Long.class);
-            LOGGER.info("Process payment action called for payment with id = {} and amount = {}", paymentId, amount);
+            BigDecimal totalCost = context.getExtendedState().get("totalCost", BigDecimal.class);
+            Long orderId = context.getExtendedState().get("orderId", Long.class);
+            LOGGER.info("Process order action called for order with id = {} and totalCost = {}", orderId, totalCost);
         };
     }
 }

@@ -25,7 +25,7 @@ public class OrderServiceImpl implements OrderService {
 
     static final Logger LOGGER = LoggerFactory.getLogger(OrderServiceImpl.class);
 
-    public static final String PAYMENT_ID_HEADER = "payment_id";
+    public static final String ORDER_ID_HEADER = "order_id";
 
     private final OrderRepository repository;
 
@@ -47,8 +47,8 @@ public class OrderServiceImpl implements OrderService {
 
         CustomerOrder createdCustomerOrder = repository.save(order);
 
-     //   StateMachine<OrderState, OrderEvent> sm = build(customerOrder.getId());
-      //  preAuth(createdCustomerOrder.getId(), amount, sm);
+        StateMachine<OrderState, OrderEvent> sm = build(createdCustomerOrder.getOrderId());
+        preAuth(createdCustomerOrder, sm);
 
         return createdCustomerOrder;
     }
@@ -84,34 +84,35 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void preAuth(Long paymentId, BigDecimal amount, StateMachine<OrderState, OrderEvent> sm) throws InsufficientFundsException {
-        if (amount.compareTo(Account.limitPerPayment) <= 0) {
-            sendEvent(paymentId, sm, OrderEvent.CREATE_ORDER);
+    public void preAuth(CustomerOrder customerOrder, StateMachine<OrderState, OrderEvent> sm) throws InsufficientFundsException {
+        if (customerOrder.getTotalCost().compareTo(Account.limitPerPayment) <= 0) {
+            sendEvent(customerOrder.getOrderId(), sm, OrderEvent.CREATE_ORDER);
         } else {
-            sendEvent(paymentId, sm, OrderEvent.CANCEL_ORDER);
-            LOGGER.error("Payment with id {} has been declined. The amount {} is bigger than {}", paymentId, amount, Account.limitPerPayment);
-            throw new InsufficientFundsException(format("The amount is bigger than %s, payment is declined.", Account.limitPerPayment));
+            sendEvent(customerOrder.getOrderId(), sm, OrderEvent.CANCEL_ORDER);
+            LOGGER.error("Order with id {} has been declined. The amount {} is bigger than {}", customerOrder.getOrderId(), customerOrder.getTotalCost(), Account.limitPerPayment);
+            throw new InsufficientFundsException(format("The total cost is bigger than %s, the order is cancelled.", Account.limitPerPayment));
         }
     }
 
 
-    private void sendEvent(Long paymentId, StateMachine<OrderState, OrderEvent> sm, OrderEvent event){
+    private void sendEvent(Long orderId, StateMachine<OrderState, OrderEvent> sm, OrderEvent event){
         Message<OrderEvent> msg = MessageBuilder.withPayload(event)
-                .setHeader(PAYMENT_ID_HEADER, paymentId)
+                .setHeader(ORDER_ID_HEADER, orderId)
                 .build();
 
         sm.sendEvent(msg);
     }
 
-    private void initializeExtendedState(StateMachine<OrderState, OrderEvent> sm, BigDecimal amount, Long paymentId) {
-        sm.getExtendedState().getVariables().put("amount", amount);
-        sm.getExtendedState().getVariables().put("paymentId", paymentId);
+    private void initializeExtendedState(StateMachine<OrderState, OrderEvent> sm, CustomerOrder order) {
+        sm.getExtendedState().getVariables().put("orderId", order.getOrderId());
+        sm.getExtendedState().getVariables().put("products", order.getProducts());
+        sm.getExtendedState().getVariables().put("totalCost", order.getTotalCost());
     }
 
-    private StateMachine<OrderState, OrderEvent> build(Long paymentId) {
+    private StateMachine<OrderState, OrderEvent> build(Long orderId) {
         StateMachine<OrderState, OrderEvent> stateMachine = stateMachineFactory.getStateMachine();
 
-        CustomerOrder customerOrder = repository.getOne(paymentId);
+        CustomerOrder customerOrder = repository.getOne(orderId);
 
         stateMachine.stop();
 
@@ -121,24 +122,15 @@ public class OrderServiceImpl implements OrderService {
                     sma.resetStateMachine(new DefaultStateMachineContext<>(customerOrder.getState(), null, null, null));
                 });
 
-        initializeExtendedState(stateMachine, customerOrder.getTotalCost(), paymentId);
+        initializeExtendedState(stateMachine, customerOrder);
         stateMachine.start();
 
         return stateMachine;
     }
 
     private BigDecimal calculateTotalCost(CustomerOrder order) {
-        BigDecimal totalCost = BigDecimal.ZERO;
-        BigDecimal count;
-        BigDecimal price;
-
-        for(int i = 0; i < order.getProducts().size(); i++) {
-            count = order.getProducts().get(i).getCount();
-            price = order.getProducts().get(i).getProduct().getProductPrice();
-            totalCost = totalCost.add(count.multiply(price));
-        }
-
-        return totalCost;
-
+        return order.getProducts().stream()
+                .map(item -> item.getCount().multiply(item.getProduct().getProductPrice()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
