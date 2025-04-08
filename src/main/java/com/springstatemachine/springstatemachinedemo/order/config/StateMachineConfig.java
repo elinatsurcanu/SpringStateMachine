@@ -19,7 +19,8 @@ import org.springframework.statemachine.state.State;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static com.springstatemachine.springstatemachinedemo.util.OrderValidator.isCountWithinTheLimit;
 
 @EnableStateMachineFactory
 @Configuration
@@ -78,14 +79,9 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<OrderS
     public Guard<OrderState, OrderEvent> checkProductQuantityGuard() {
         return context -> {
             List<Item> products = (List<Item>) context.getExtendedState().get("products", List.class);
-            List<BigDecimal> productQuantity = products.stream().map(Item::getCount).collect(Collectors.toList());
-            LOGGER.info("Checking whether the product quantity is within the limit, quantities: {}", productQuantity);
-           return isCountWithinTheLimit(productQuantity);
+            LOGGER.info("Checking whether the product quantity is within the available stock...");
+           return isCountWithinTheLimit(products);
         };
-    }
-
-    public boolean isCountWithinTheLimit(List<BigDecimal> productQuantity) {
-        return productQuantity.stream().allMatch(count -> count != null && count.compareTo(BigDecimal.valueOf(20)) < 0);
     }
 
     public Action<OrderState, OrderEvent> processOrderAction() {
