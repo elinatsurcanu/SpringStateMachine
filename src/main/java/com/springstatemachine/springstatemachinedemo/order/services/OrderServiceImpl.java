@@ -50,7 +50,7 @@ public class OrderServiceImpl implements OrderService {
 
         CustomerOrder createdCustomerOrder = repository.save(order);
 
-        StateMachine<OrderState, OrderEvent> sm = build(createdCustomerOrder.getOrderId());
+        StateMachine<OrderState, OrderEvent> sm = build(createdCustomerOrder);
         preAuth(createdCustomerOrder, sm);
 
         return createdCustomerOrder;
@@ -69,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderException("Order with id " + orderId + " already processed");
         }
 
-        StateMachine<OrderState, OrderEvent> sm = build(orderId);
+         StateMachine<OrderState, OrderEvent> sm = build(customerOrder);
         if (customerOrder.getTotalCost().compareTo(Account.accountBalance) <= 0) {
             boolean eventAccepted = sendEvent(orderId, sm, OrderEvent.PROCESS_ORDER);
             if (eventAccepted) {
@@ -118,20 +118,18 @@ public class OrderServiceImpl implements OrderService {
         sm.getExtendedState().getVariables().put("totalCost", order.getTotalCost());
     }
 
-    private StateMachine<OrderState, OrderEvent> build(Long orderId) {
+    private StateMachine<OrderState, OrderEvent> build(CustomerOrder order) {
         StateMachine<OrderState, OrderEvent> stateMachine = stateMachineFactory.getStateMachine();
-
-        CustomerOrder customerOrder = repository.getOne(orderId);
 
         stateMachine.stop();
 
         stateMachine.getStateMachineAccessor()
                 .doWithAllRegions(sma -> {
                     sma.addStateMachineInterceptor(orderStateChangeInterceptor);
-                    sma.resetStateMachine(new DefaultStateMachineContext<>(customerOrder.getState(), null, null, null));
+                    sma.resetStateMachine(new DefaultStateMachineContext<>(order.getState(), null, null, null));
                 });
 
-        initializeExtendedState(stateMachine, customerOrder);
+        initializeExtendedState(stateMachine, order);
         stateMachine.start();
 
         return stateMachine;

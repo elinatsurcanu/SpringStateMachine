@@ -16,7 +16,6 @@ public class OrderValidator {
 
     private static final Map<String, BigDecimal> AVAILABLE_STOCK = new HashMap<>();
 
-
     static {
         AVAILABLE_STOCK.put("banana", BigDecimal.valueOf(10));
         AVAILABLE_STOCK.put("apple", BigDecimal.valueOf(20));
